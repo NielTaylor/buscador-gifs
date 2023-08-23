@@ -14,23 +14,23 @@ class TelaInicial extends StatefulWidget {
 
 class _TelaInicialState extends State<TelaInicial> {
   String? _busca;
-  final int _offset = 0;
+  int _offset = 0;
 
   Future<Map> _pegarGifs() async {
-    http.Response response;
+    http.Response resposta;
 
     final parametrosBusca = {
       'api_key': 'cFEztoWtGyuAkpGaeXRUFFcTSlPjJKlV',
       'q': '$_busca',
-      'limit': '25',
+      'limit': '19',
       'offset': '$_offset',
       'rating': 'g',
       'lang': 'pt',
-      'bundle': 'clips_grid_picker',
+      'bundle': 'messaging_non_clips',
     };
 
     if (_busca == null) {
-      response =
+      resposta =
           await http.get(Uri.https('api.giphy.com', '/v1/gifs/trending', {
         'api_key': 'cFEztoWtGyuAkpGaeXRUFFcTSlPjJKlV',
         'limit': '20',
@@ -39,11 +39,11 @@ class _TelaInicialState extends State<TelaInicial> {
         'bundle': 'messaging_non_clips',
       }));
     } else {
-      response = await http
+      resposta = await http
           .get(Uri.https('api.giphy.com', '/v1/gifs/search', parametrosBusca));
     }
 
-    return json.decode(response.body);
+    return json.decode(resposta.body);
   }
 
   @override
@@ -78,6 +78,16 @@ class _TelaInicialState extends State<TelaInicial> {
                 color: Colors.white,
                 fontSize: 18.0,
               ),
+              //1.1 o onSubmitted realizar o "comando" qnd dou um ok no teclado
+              //ou um enter no teclado desktop
+              onSubmitted: (texto) {
+                setState(() {
+                  _busca = texto;
+                  //1.9 a cada pesquisa zero o offset para mostrar os primeiros
+                  //gifs da lista
+                  _offset = 0;
+                });
+              },
             ),
           ),
           Expanded(
@@ -98,7 +108,8 @@ class _TelaInicialState extends State<TelaInicial> {
                     );
                   case ConnectionState.done:
                     if (instantaneamente.hasError) {
-                      return Container();
+                      return Center(
+                          child: Text(instantaneamente.error.toString()));
                     } else {
                       return _criarTabelaDeGifs(context, instantaneamente);
                     }
@@ -111,56 +122,74 @@ class _TelaInicialState extends State<TelaInicial> {
     );
   }
 
+  //1.2 função para add + 1 espaço para eu colocar um botão de "ver mais" no
+  //final da lista
+  int _quantidadeItens(List dados) {
+    if (_busca == null) {
+      //1.3 se não for busca, carregar apenas o tamanho da lista de fato
+      return dados.length;
+    } else {
+      //1.4 se for busca, colocar um espaço a mais
+      return dados.length + 1;
+    }
+  }
+
   Widget _criarTabelaDeGifs(
       BuildContext context, AsyncSnapshot instantaneamente) {
-    //1.1 o GridView é o que irá criar a grade de gifs. Acho que ele é com
-    //builder pq ele será construído de acordo com mudanças em algo
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: GridView.builder(
-        //1.2 espaço endre as bordas da tela
-        padding: EdgeInsets.all(10),
-        //1.3 o grid delegate acho q é o que define o estilo de montagem da grade
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          //1.4 defini quantos item ele pode ter na horizontal
-          crossAxisCount: 2,
-          //1.5 espaçamento entre os itens na horizontal
-          crossAxisSpacing: 10,
-          //1.6 espaçamento na vertical
-          mainAxisSpacing: 10,
-        ),
-        //2.1 passei então para a qntdade de itens a serem mostrado ser a
-        //quantidade de itens defini para a api de gifs trendings retornar
-        //Como todo os gifs estão dentro de 'data', passei para ser pego então
-        //de fato o  comprimento de 'data'
-        //1.7 quantidade de grades/itens a serem mostrados
-        itemCount: instantaneamente.data['data'].length,
-        //1.8 no itemBuilder deve ter uma função que retorna o widget que
-        //colocarem em cada posição/index/indice
-        //Para cada item que for construído será chamada a função que passarmos
-        //nele, e o widget que essa função retornar é o que será mostrado na
-        //posição/indice/index em questão (é parecido com um for que carrega
-        //uma lista)
-        itemBuilder: (context, indice) {
-          //1.9 quermos que em cada posição seja colocada uma imagem, mas como
-          //quero q após o clique na imagem aconteça alguma coisa, irei colocar
-          //a imagem em um GestureDetector
+    return GridView.builder(
+      padding: EdgeInsets.all(10),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      //1.5 o retorno dessa função será a quantidade de itens na minha grade
+      //A lista analisada será a lista de gifs retornada
+      itemCount: _quantidadeItens(instantaneamente.data['data']),
+      itemBuilder: (context, indice) {
+        //1.6 se eu não estiver realizando uma busca, carregar o gif
+        //Se o indice/posição estiver dentro do tamanho da lista, carregar o
+        //gif da lista
+        //Ou seja, qnd eu estiver buscando e acabar os gifs da lista...[1.7]
+        if (_busca == null || indice < instantaneamente.data['data'].length) {
           return GestureDetector(
-            //1.8 aí então passo a minha imagem que estará na variável que
-            //armazena o json/dados obtidos no FutureBuilder, e q o
-            //FutureBuilder pegou do _pegarGifs()
             child: Image.network(
               instantaneamente.data['data'][indice]['images']['fixed_height']
                   ['url'],
-              //1.9 após a vírgula acima posso passar então outros atributos p/
-              //a imagem),
               height: 300,
               fit: BoxFit.cover,
-              //passei a altura e como a imagem deve se encaixar no espaço alocado
             ),
           );
-        },
-      ),
+          //1.7 aparecer a opção de "carregar mais" gifs
+        } else {
+          return GestureDetector(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add,
+                  size: 70,
+                  color: Colors.white,
+                ),
+                Text(
+                  'Carregar mais...',
+                  style: TextStyle(color: Colors.white, fontSize: 22),
+                )
+              ],
+            ),
+            //1.8 ao clicar em carregar mais, mostrar mais 19 gifs da base de gifs
+            //Isso funcionará pois o futureBuilder será recarregado, rodando assim
+            //novamente a montagem do gridview e continuará a contagem do itemCount
+            //pois o offset será definido em +19 assim então pulará o carregamento
+            //dos primeiros [valor do offset] da lista
+            onTap: () {
+              setState(() {
+                _offset += 19;
+              });
+            },
+          );
+        }
+      },
     );
   }
 }
