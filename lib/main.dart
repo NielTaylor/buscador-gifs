@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:busgiphys/Interface/pagina_gif.dart';
 import 'package:flutter/material.dart';
 import 'package:busgiphys/Interface/tela_inicial.dart';
 

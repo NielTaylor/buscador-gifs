@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:busgiphys/Interface/pagina_gif.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 
 class TelaInicial extends StatefulWidget {
   const TelaInicial({super.key});
@@ -78,8 +79,6 @@ class _TelaInicialState extends State<TelaInicial> {
                 fontSize: 18.0,
               ),
               onSubmitted: (texto) {
-                //1.9 adicionei uma verificação se o texto da busca é vazio
-                //para então definir a busca como nula e carregar os gifs trends
                 if (texto == '') {
                   setState(() {
                     _busca = null;
@@ -152,20 +151,20 @@ class _TelaInicialState extends State<TelaInicial> {
               height: 300,
               fit: BoxFit.cover,
             ),
-            //1.3 coloco uma função no onTap que leva para página que criei
             onTap: () {
-              //1.4 a função que faz isso é o Navigator.push
-              //E no atributo da rota da página, uso o Widget MaterialPageRoute
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                    //1.5 no builder, retorno/passo a pagina do meu gif com o
-                    //indicando no atributo que criei o caminho "pai" do gif
                     builder: (context) => PaginaGif(
                       dadosGif: instantaneamente.data['data'][indice],
                     ),
                   ));
             },
+            //1.5 e coloquei também a possibilidade de compartilhar ao segurar
+            //em cima da imagem
+            onLongPress: () {
+                Share.share(instantaneamente.data['data'][indice]['images']['original']['url']);
+              },
           );
         } else {
           return GestureDetector(
