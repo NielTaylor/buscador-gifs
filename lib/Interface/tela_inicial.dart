@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:busgiphys/Interface/pagina_gif.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -49,8 +50,6 @@ class _TelaInicialState extends State<TelaInicial> {
   @override
   void initState() {
     super.initState();
-
-    //_pegarGifs().then((value) => print('teste: $value'));
   }
 
   @override
@@ -78,15 +77,19 @@ class _TelaInicialState extends State<TelaInicial> {
                 color: Colors.white,
                 fontSize: 18.0,
               ),
-              //1.1 o onSubmitted realizar o "comando" qnd dou um ok no teclado
-              //ou um enter no teclado desktop
               onSubmitted: (texto) {
-                setState(() {
-                  _busca = texto;
-                  //1.9 a cada pesquisa zero o offset para mostrar os primeiros
-                  //gifs da lista
-                  _offset = 0;
-                });
+                //1.9 adicionei uma verificação se o texto da busca é vazio
+                //para então definir a busca como nula e carregar os gifs trends
+                if (texto == '') {
+                  setState(() {
+                    _busca = null;
+                  });
+                } else {
+                  setState(() {
+                    _busca = texto;
+                    _offset = 0;
+                  });
+                }
               },
             ),
           ),
@@ -122,14 +125,10 @@ class _TelaInicialState extends State<TelaInicial> {
     );
   }
 
-  //1.2 função para add + 1 espaço para eu colocar um botão de "ver mais" no
-  //final da lista
   int _quantidadeItens(List dados) {
     if (_busca == null) {
-      //1.3 se não for busca, carregar apenas o tamanho da lista de fato
       return dados.length;
     } else {
-      //1.4 se for busca, colocar um espaço a mais
       return dados.length + 1;
     }
   }
@@ -143,14 +142,8 @@ class _TelaInicialState extends State<TelaInicial> {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      //1.5 o retorno dessa função será a quantidade de itens na minha grade
-      //A lista analisada será a lista de gifs retornada
       itemCount: _quantidadeItens(instantaneamente.data['data']),
       itemBuilder: (context, indice) {
-        //1.6 se eu não estiver realizando uma busca, carregar o gif
-        //Se o indice/posição estiver dentro do tamanho da lista, carregar o
-        //gif da lista
-        //Ou seja, qnd eu estiver buscando e acabar os gifs da lista...[1.7]
         if (_busca == null || indice < instantaneamente.data['data'].length) {
           return GestureDetector(
             child: Image.network(
@@ -159,8 +152,21 @@ class _TelaInicialState extends State<TelaInicial> {
               height: 300,
               fit: BoxFit.cover,
             ),
+            //1.3 coloco uma função no onTap que leva para página que criei
+            onTap: () {
+              //1.4 a função que faz isso é o Navigator.push
+              //E no atributo da rota da página, uso o Widget MaterialPageRoute
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    //1.5 no builder, retorno/passo a pagina do meu gif com o
+                    //indicando no atributo que criei o caminho "pai" do gif
+                    builder: (context) => PaginaGif(
+                      dadosGif: instantaneamente.data['data'][indice],
+                    ),
+                  ));
+            },
           );
-          //1.7 aparecer a opção de "carregar mais" gifs
         } else {
           return GestureDetector(
             child: Column(
@@ -177,11 +183,6 @@ class _TelaInicialState extends State<TelaInicial> {
                 )
               ],
             ),
-            //1.8 ao clicar em carregar mais, mostrar mais 19 gifs da base de gifs
-            //Isso funcionará pois o futureBuilder será recarregado, rodando assim
-            //novamente a montagem do gridview e continuará a contagem do itemCount
-            //pois o offset será definido em +19 assim então pulará o carregamento
-            //dos primeiros [valor do offset] da lista
             onTap: () {
               setState(() {
                 _offset += 19;
